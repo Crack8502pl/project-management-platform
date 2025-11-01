@@ -25,3 +25,7 @@ python-decouple>=3.8
 
 # Utilities
 pytz>=2023.3
+
+# LDAP Authentication
+django-auth-ldap==4.6.0
+python-ldap==3.4.4

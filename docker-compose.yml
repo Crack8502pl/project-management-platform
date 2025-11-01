@@ -40,6 +40,8 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    extra_hosts:
+      - "dc.example.local:192.168.1.10"  # Replace with your DC IP
     depends_on:
       db:
         condition: service_healthy
@@ -55,6 +57,10 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - LDAP_SERVER_URI=${LDAP_SERVER_URI}
+      - LDAP_BIND_DN=${LDAP_BIND_DN}
+      - LDAP_BIND_PASSWORD=${LDAP_BIND_PASSWORD}
+      - LDAP_USER_SEARCH_BASE=${LDAP_USER_SEARCH_BASE}
 
   celery:
     build:
