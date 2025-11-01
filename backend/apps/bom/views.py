@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from .models import Component, BOMTemplate, BOMTemplateItem, BOMInstance, BOMInstanceItem
