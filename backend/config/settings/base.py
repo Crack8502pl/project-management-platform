@@ -210,3 +210,17 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# ============================================
+# LDAP Authentication
+# ============================================
+try:
+    from .ldap_config import *
+except ImportError:
+    pass
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'django_auth_ldap.backend.LDAPBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]

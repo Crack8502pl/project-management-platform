@@ -1,13 +1,17 @@
 from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import update_session_auth_hash, authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, Role
 from .serializers import (
     UserSerializer, UserCreateSerializer, UserUpdateSerializer,
     ChangePasswordSerializer, RoleSerializer
 )
+import logging
+
+logger = logging.getLogger('authentication')
 
 
 class RoleViewSet(viewsets.ReadOnlyModelViewSet):
@@ -77,3 +81,80 @@ class UserViewSet(viewsets.ModelViewSet):
         update_session_auth_hash(request, user)
         
         return Response({'detail': 'Password updated successfully.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    """
+    Logowanie użytkownika przez Active Directory lub lokalną bazę.
+    """
+    username = request.data.get('username', '').strip()
+    password = request.data.get('password', '')
+    
+    if not username or not password:
+        return Response(
+            {'error': 'Username i password są wymagane'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if '@' in username:
+        username = username.split('@')[0]
+    
+    logger.info(f"Login attempt for user: {username}")
+    
+    user = authenticate(request, username=username, password=password)
+    
+    if user is not None:
+        if not user.is_active:
+            logger.warning(f"Inactive user tried to login: {username}")
+            return Response(
+                {'error': 'Konto użytkownika jest nieaktywne'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        refresh = RefreshToken.for_user(user)
+        
+        if not user.role:
+            logger.warning(f"User {username} logged in without role assigned")
+        
+        logger.info(f"✅ User {username} logged in successfully (source: {user.auth_source})")
+        
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': str(user.id),
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role.name if user.role else None,
+                'auth_source': user.auth_source,
+                'phone': user.phone or '',
+            }
+        })
+    else:
+        logger.warning(f"❌ Failed login attempt for user: {username}")
+        return Response(
+            {'error': 'Nieprawidłowy login lub hasło'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
+@api_view(['GET'])
+def current_user_view(request):
+    """
+    Zwraca dane zalogowanego użytkownika
+    """
+    user = request.user
+    return Response({
+        'id': str(user.id),
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'role': user.role.name if user.role else None,
+        'auth_source': user.auth_source,
+        'phone': user.phone or '',
+    })

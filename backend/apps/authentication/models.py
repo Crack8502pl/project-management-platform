@@ -46,6 +46,29 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # LDAP/AD tracking fields
+    auth_source = models.CharField(
+        max_length=20,
+        choices=[
+            ('LOCAL', 'Lokalna baza danych'),
+            ('AD', 'Active Directory'),
+        ],
+        default='LOCAL',
+        help_text='Źródło autentykacji użytkownika'
+    )
+    ldap_dn = models.CharField(
+        max_length=500, 
+        blank=True, 
+        null=True,
+        verbose_name='LDAP Distinguished Name',
+        help_text='DN użytkownika w Active Directory'
+    )
+    ad_synced_at = models.DateTimeField(
+        null=True, 
+        blank=True,
+        verbose_name='Ostatnia synchronizacja z AD'
+    )
+    
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'User'
