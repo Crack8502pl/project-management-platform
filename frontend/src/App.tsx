@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Login } from '@/pages/Login/Login';
@@ -9,6 +9,7 @@ import { TaskCreate } from '@/pages/Tasks/TaskCreate';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/utils/constants';
 import { offlineService } from '@/services/offline';
+import { setUnauthorizedHandler } from '@/services/api';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -32,6 +33,20 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+// Component to set up unauthorized handler
+const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Set up unauthorized handler
+    setUnauthorizedHandler(() => {
+      navigate(ROUTES.LOGIN, { replace: true });
+    });
+  }, [navigate]);
+
+  return <>{children}</>;
+};
+
 function App() {
   useEffect(() => {
     // Initialize offline service
@@ -41,8 +56,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path={ROUTES.LOGIN} element={<Login />} />
+        <AppInitializer>
+          <Routes>
+            <Route path={ROUTES.LOGIN} element={<Login />} />
           
           <Route
             path="/"
@@ -60,7 +76,8 @@ function App() {
 
           {/* Fallback route */}
           <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-        </Routes>
+          </Routes>
+        </AppInitializer>
       </BrowserRouter>
     </QueryClientProvider>
   );

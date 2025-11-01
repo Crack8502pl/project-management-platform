@@ -15,20 +15,11 @@ export const useMediaQuery = (query: string): boolean => {
     };
 
     // Add listener
-    if (media.addEventListener) {
-      media.addEventListener('change', listener);
-    } else {
-      // Fallback for older browsers
-      media.addListener(listener);
-    }
+    media.addEventListener('change', listener);
 
     // Cleanup
     return () => {
-      if (media.removeEventListener) {
-        media.removeEventListener('change', listener);
-      } else {
-        media.removeListener(listener);
-      }
+      media.removeEventListener('change', listener);
     };
   }, [query]);
 

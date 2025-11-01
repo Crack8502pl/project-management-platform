@@ -24,6 +24,13 @@ api.interceptors.request.use(
   }
 );
 
+// Callback for handling unauthorized access
+let onUnauthorized: (() => void) | null = null;
+
+export const setUnauthorizedHandler = (handler: () => void) => {
+  onUnauthorized = handler;
+};
+
 // Response interceptor - handle errors
 api.interceptors.response.use(
   (response) => {
@@ -31,10 +38,12 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear auth and redirect to login
+      // Unauthorized - clear auth and notify handler
       localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      window.location.href = '/login';
+      if (onUnauthorized) {
+        onUnauthorized();
+      }
     }
     return Promise.reject(error);
   }
